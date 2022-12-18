@@ -1,45 +1,35 @@
 stages:
 - build
-- publish
 - revise
 
-# Build the container based on the dockerfile in the root project directory. Push it to the GitLab Project's Container Registry. Automatically run this job on the main and develop branches but allow the user to run it manually on another branch.
-container_build:
+# Build the container based on the dockerfile in the root project directory. Push it to the GitLab Project's Container Registry and Google Artifact Registry. Automatically run this job on the main and develop branches but allow the user to run it manually on another branch.
+container_build_publish:
   image: quay.io/podman/stable
   stage: build
   services:
     - docker:dind
-  before_script:
-    - podman login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-  script:
-    - podman build --pull -t $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_BRANCH -f dockerfile .
-    - podman tag $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_BRANCH $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_SHORT_SHA
-    - podman push $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_BRANCH
-    - podman push $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_SHORT_SHA
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop" 
-      when: on_success
-      allow_failure: true
-    # Give the option to run the job manually as needed
-    - when: manual
-      allow_failure: true
 
-# Push the container image from the GitLab Container Registry to the Google Artifact Registry. Automatically run this job on the main and develop branches but allow the user to run it manually on another branch.
-app_publish:
-  image: quay.io/podman/stable
-  stage: publish
-  needs: ["container_build"]
   before_script:
+    # Log into the GitLab Project's Container Registry
+    - podman login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     # Login to Google Artifact Registry
     - base64 -d $GCP_REGISTRY_TOKEN | podman login -u _json_key --password-stdin $GCP_REGISTRY
     # Login to Gitlab container Registry
     - podman login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+
   script:
-    - podman pull $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_SHORT_SHA
-    - podman tag $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_SHORT_SHA $GCP_REGISTRY/$GCP_CONTAINER_NAME:$CI_COMMIT_SHORT_SHA
-    - podman tag $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_SHORT_SHA $GCP_REGISTRY/$GCP_CONTAINER_NAME:$CI_COMMIT_BRANCH
+    # Build the container image
+    - podman build --pull -t $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_BRANCH -f dockerfile .
+
+    # Tag the image for the two registries (two tags per registry) it will be pushed to.
+    - podman tag $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_BRANCH $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_SHORT_SHA $GCP_REGISTRY/$GCP_CONTAINER_NAME:$CI_COMMIT_SHORT_SHA $GCP_REGISTRY/$GCP_CONTAINER_NAME:$CI_COMMIT_BRANCH
+
+    # Push each tag one at a time.
+    - podman push $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_BRANCH
+    - podman push $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_SHORT_SHA
     - podman push $GCP_REGISTRY/$GCP_CONTAINER_NAME:$CI_COMMIT_SHORT_SHA
     - podman push $GCP_REGISTRY/$GCP_CONTAINER_NAME:$CI_COMMIT_BRANCH
+    
   rules:
     - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop" 
       when: on_success
@@ -52,7 +42,7 @@ app_publish:
 app_revise:
   image: gcr.io/google.com/cloudsdktool/google-cloud-cli:latest
   stage: revise
-  needs: ["container_build","app_publish"]
+  needs: ["container_build_publish"]
   before_script:
     # Decrypt the token, save it as a file, and use that to authenticate the service account with GCP.
     - base64 -d $GCP_REGISTRY_TOKEN > /home/token.json
