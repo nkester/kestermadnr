@@ -1,15 +1,104 @@
 stages:
-- build
-- revise
+- pkg_test
+- pkg_covr
+- container_build
+- gcp_service_revise
+
+# Test that the package builds properly and passes all unit tests
+test_package:
+  image: rocker/tidyverse:4.2.2
+  stage: pkg_test
+  before_script:
+    # Navigate from the root project dir to the package dir.
+    - cd ./kestermadnr
+  script:
+    - R -e 'install.packages(c("remotes","devtools"))'
+    - R -e 'remotes::install_deps(dependencies = TRUE)'
+    - R -e 'devtools::check(pkg = ".")'
+  rules:
+    - allow_failure: false
+
+# If all tests pass, build a test coverage report for the package.
+document_coverage:
+  image: rocker/tidyverse:4.2.2
+  stage: pkg_covr
+  needs: ['test_package']
+  before_script:
+    # Navigate from the root project dir to the package dir.
+    - cd ./kestermadnr
+  script:
+    - R -e 'install.packages(c("remotes","DT","covr"))'
+    - R -e 'remotes::install_deps(dependencies = TRUE)'
+    # Output the test coverage report in the public directory in a file named 'index.html'
+    #  This allows GitLab pages to easily serve it.
+    - R -e 'covr::gitlab(quiet = FALSE, file = "public/index.html")'
+    # Record all files in this public directory for future jobs.
+  artifacts:
+    paths:
+      - ./kestermadnr/public
+
+# Deploy the coverage report to GitLab Pages for review.
+pages:
+  image: busybox
+  stage: pkg_covr
+  needs: ['document_coverage']
+  script:
+    # In order to serve it, the files must be in the root directory so we'll move it.
+    - mkdir ./public
+    - mv ./kestermadnr/public ./public/covr
+  # Push the results to the public artifact path for GitLab Pages to use.
+  artifacts:
+    paths:
+      - public
+  rules:
+    # Only publish the code coverage report to GitLab Pages from the develop branch.
+    # This is because no changes should occur between develop and main but I want
+    #  to see the coverage before it is deployed.
+    - if: $CI_COMMIT_BRANCH == "develop"
+      when: on_success
+      allow_failure: true
+
+# Allow {golem} to create the dockerfile for me.
+dockerfile_build:
+  image: rocker/tidyverse:4.2.2
+  stage: container_build
+  # Do not move forward to create the dockerfile if the app does not pass its tests.
+  needs: ['test_package']
+  before_script:
+    - cd ./kestermadnr
+  script:
+    - R -e 'install.packages(c("golem","dockerfiler","attachment","renv"))'
+    # Build the dockerfile based on the golem project and the renv lock file.
+    # Place the docker file, kestermadnr package .tar, and all other artifacts in
+    #  the `deploy` directory at the project's root level (one level up).
+    - R -e 'golem::add_dockerfile_with_renv(output_dir = "../deploy", source_folder = ".", lockfile = "./renv.lock", from = "docker.io/rocker/verse")'
+    # golem requires a reference to `renv.lock.prod` but does not create this file.
+    #  Here I simply create a copy of `renv.lock` with that name.
+    - cp ../deploy/renv.lock ../deploy/renv.lock.prod
+  # Pass everything in the `deploy` to the artifacts for use by other jobs.
+  artifacts:
+    paths:
+      - deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
+      when: on_success
+      allow_failure: true
+    # Give the option to run the job manually as needed
+    - when: manual
+      allow_failure: true
 
 # Build the container based on the dockerfile in the root project directory. Push it to the GitLab Project's Container Registry and Google Artifact Registry. Automatically run this job on the main and develop branches but allow the user to run it manually on another branch.
 container_build_publish:
   image: quay.io/podman/stable
-  stage: build
+  stage: container_build
   services:
     - docker:dind
-
+  needs: ['dockerfile_build']
   before_script:
+    - ls
+    # Navigate into the directory with the build files created in the previous
+    #  `dockerfile_build` job.
+    - cd ./deploy
     # Log into the GitLab Project's Container Registry
     - podman login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     # Login to Google Artifact Registry
@@ -18,8 +107,11 @@ container_build_publish:
     - podman login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
 
   script:
+    # Build the base container image created by {golem}
+    - podman build -f Dockerfile_base --progress=plain -t kestermadnr_base .
+
     # Build the container image
-    - podman build --pull -t $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_BRANCH -f dockerfile .
+    - podman build -t $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_BRANCH -f Dockerfile .
 
     # Tag the image for the two registries (two tags per registry) it will be pushed to.
     - podman tag $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_BRANCH $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_SHORT_SHA $GCP_REGISTRY/$GCP_CONTAINER_NAME:$CI_COMMIT_SHORT_SHA $GCP_REGISTRY/$GCP_CONTAINER_NAME:$CI_COMMIT_BRANCH
@@ -29,9 +121,9 @@ container_build_publish:
     - podman push $CI_REGISTRY_IMAGE/$GCP_CONTAINER_NAME:$CI_COMMIT_SHORT_SHA
     - podman push $GCP_REGISTRY/$GCP_CONTAINER_NAME:$CI_COMMIT_SHORT_SHA
     - podman push $GCP_REGISTRY/$GCP_CONTAINER_NAME:$CI_COMMIT_BRANCH
-    
+
   rules:
-    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop" 
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
       when: on_success
       allow_failure: true
     # Give the option to run the job manually as needed
@@ -41,7 +133,7 @@ container_build_publish:
 # Deploy a revision to Google Cloud Run to deploy the newly pushed container image. Automatically run this job on the main and develop branches but allow the user to run it manually on another branch.
 app_revise:
   image: gcr.io/google.com/cloudsdktool/google-cloud-cli:latest
-  stage: revise
+  stage: gcp_service_revise
   needs: ["container_build_publish"]
   before_script:
     # Decrypt the token, save it as a file, and use that to authenticate the service account with GCP.
@@ -50,7 +142,7 @@ app_revise:
   script:
     - gcloud run deploy $GCP_SERVICE --region $GCP_REGION --image $GCP_REGISTRY/$GCP_CONTAINER_NAME:$CI_COMMIT_SHORT_SHA
   rules:
-    - if: $CI_COMMIT_BRANCH == "main" 
+    - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
       allow_failure: true
     # Give the option to run the job manually as needed
