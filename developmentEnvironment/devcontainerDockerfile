@@ -1,0 +1,11 @@
+FROM docker.io/rocker/rstudio:4.2.2
+
+RUN apt-get update -y \
+  && apt-get upgrade -y
+  
+########################
+## INSTALL R PACKAGES ##
+########################
+RUN install2.r --error --deps TRUE \
+    golem 
+
