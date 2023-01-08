@@ -2,12 +2,16 @@
 #'
 #' @param request Internal parameter for `{shiny}`.
 #'     DO NOT REMOVE.
-#' @import shiny
+#' @importFrom shiny tagList fluidPage navbarPage div img tabPanel p
+#' @importFrom shinipsum random_text
+#' @importFrom shinyalert useShinyalert
+#' @importFrom shinythemes shinytheme
 #' @noRd
 app_ui <- function(request) {
-  tagList(
+  shiny::tagList(
     # Leave this function for adding external resources
     golem_add_external_resources(),
+
     # Your application UI logic
     shiny::fluidPage(
 
@@ -21,20 +25,34 @@ app_ui <- function(request) {
           "KWS March Madness"
         ), # close shiny title div
         theme = shinythemes::shinytheme(theme = "flatly"),
+        windowTitle = "KWS March Madness",
+        lang = "en",
 
-        shiny::tabPanel(title = "Tab 1",
+        shiny::tabPanel(title = "Home",
 
-                        shiny::h1("Test tab 1")
+                        shiny::p(shinipsum::random_text(nwords = 50)),
 
-                        ),
+                        mod_home_ui("home_1")
 
-        shiny::tabPanel(title = "Tab 2",
+        ), # close Introduction tabPanel
 
-                        shiny::h1("Test tab 2")
+        shiny::tabPanel(title = "Point Status",
 
-                        ) # tabPanel
+                        shiny::p(shinipsum::random_text(nwords = 50)),
 
-        ) # close navbarPage
+                        mod_your_bracket_ui("your_bracket_1")
+
+        ), # close Point Status tabPanel
+
+        shiny::tabPanel(title = "Your Bracket",
+
+                        shiny::p(shinipsum::random_text(nwords = 50)),
+
+                        mod_point_status_ui("point_status_1")
+
+        ) # close Your Bracket tabPanel
+
+      ) # close navbarPage
 
     ) # close fluidPage
 
@@ -61,8 +79,9 @@ golem_add_external_resources <- function() {
     bundle_resources(
       path = app_sys("app/www"),
       app_title = "kesterMadnr"
-    )
-    # Add here other external resources
-    # for example, you can add shinyalert::useShinyalert()
+    ),
+
+    shinyalert::useShinyalert(force = TRUE)
+
   )
 }
