@@ -9,11 +9,38 @@ app_ui <- function(request) {
     # Leave this function for adding external resources
     golem_add_external_resources(),
     # Your application UI logic
-    fluidPage(
-      h1("kesterMadnr")
-    )
-  )
-}
+    shiny::fluidPage(
+
+      shiny::navbarPage(
+        title = shiny::div(
+          shiny::div(
+            id = "title-icon",
+            shiny::img(src = "www/favicon.png",
+                       height = "50px")
+          ),
+          "KWS March Madness"
+        ), # close shiny title div
+        theme = shinythemes::shinytheme(theme = "flatly"),
+
+        shiny::tabPanel(title = "Tab 1",
+
+                        shiny::h1("Test tab 1")
+
+                        ),
+
+        shiny::tabPanel(title = "Tab 2",
+
+                        shiny::h1("Test tab 2")
+
+                        ) # tabPanel
+
+        ) # close navbarPage
+
+    ) # close fluidPage
+
+  ) # close tagList
+
+} # close app_ui function
 
 #' Add external Resources to the Application
 #'
