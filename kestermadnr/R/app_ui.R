@@ -12,6 +12,8 @@ app_ui <- function(request) {
     # Leave this function for adding external resources
     golem_add_external_resources(),
 
+    mod_footer_ui("footer_1"),
+
     # Your application UI logic
     shiny::fluidPage(
 

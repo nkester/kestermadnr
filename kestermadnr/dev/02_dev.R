@@ -23,7 +23,7 @@ attachment::att_amend_desc()
 
 ## Add modules ----
 ## Create a module infrastructure in R/
-golem::add_module(name = "your_bracket", with_test = TRUE,pkg = ".") # Name of the module
+golem::add_module(name = "footer", with_test = TRUE,pkg = ".") # Name of the module
 golem::add_module(name = "name_of_module2", with_test = TRUE) # Name of the module
 
 ## Add helper functions ----
@@ -36,7 +36,7 @@ golem::add_utils("helpers", with_test = TRUE)
 golem::add_js_file("script")
 golem::add_js_handler("handlers")
 golem::add_css_file(pkg = ".",
-                    name = "title-icon")
+                    name = "footer")
 golem::add_sass_file("custom")
 
 ## Add internal datasets ----
