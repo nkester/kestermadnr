@@ -16,11 +16,14 @@
 ## Dependencies ----
 ## Amend DESCRIPTION with dependencies read from package code parsing
 ## install.package('attachment') # if needed.
+usethis::use_package("shinipsum")
+usethis::use_package("shinyalert")
+usethis::use_package("shinythemes")
 attachment::att_amend_desc()
 
 ## Add modules ----
 ## Create a module infrastructure in R/
-golem::add_module(name = "name_of_module1", with_test = TRUE) # Name of the module
+golem::add_module(name = "footer", with_test = TRUE,pkg = ".") # Name of the module
 golem::add_module(name = "name_of_module2", with_test = TRUE) # Name of the module
 
 ## Add helper functions ----
@@ -32,7 +35,8 @@ golem::add_utils("helpers", with_test = TRUE)
 ## Creates .js and .css files at inst/app/www
 golem::add_js_file("script")
 golem::add_js_handler("handlers")
-golem::add_css_file("custom")
+golem::add_css_file(pkg = ".",
+                    name = "footer")
 golem::add_sass_file("custom")
 
 ## Add internal datasets ----
