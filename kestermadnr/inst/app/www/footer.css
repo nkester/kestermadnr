@@ -1,0 +1,24 @@
+ .navbar{
+    margin-top: 0px;
+    width: 100%;
+  }
+
+  .tab-pane{
+    padding-bottom: 40px; /* Ensure the tab Panel ends before the footer*/
+  }
+
+  .fixed-footer{
+    width: 100%;
+    overflow: hidden; /* Unclear if needed. Intended to prevent elements from rendering over these. This z-index takes care of this*/
+    position: fixed;
+    text-align: center;
+    font-size: 12px;
+    height: 30px; /* The height of the header and footer*/
+    z-index: 10000; /* Place the header and footer on top of everything*/
+    bottom: 0; /* Fix the footer at the very bottom */
+  }
+
+  .fixed-footer{
+    bottom: 0; /* Fix the footer at the very bottom */
+  }
+
