@@ -19,7 +19,7 @@ mod_footer_ui <- function(id){
         Version: %s, Built at: %s
         </p>
         </div>}",
-        golem::get_golem_version(),
+        as.character(golem::get_golem_options("version")),
         paste0(
           system(
             command = r"{TZ="America/New_York" date +"%H:%M %m-%d-%Y"}",
@@ -57,8 +57,6 @@ mod_footer_ui <- function(id){
 mod_footer_server <- function(id){
   moduleServer( id, function(input, output, session){
     ns <- session$ns
-
-
 
   })
 }
