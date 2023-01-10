@@ -1,6 +1,6 @@
 Package: kestermadnr
 Title: Kester, Smith, Wahl March Madness Tool
-Version: 0.0.0.9000
+Version: 0.0.1
 Authors@R: person('Neil', 'Kester', email = 'kesterne1@gmail.com', role = c('cre', 'aut'))
 Description: This application allows the family to enter, track, and compare their march madness picks against the tournament and each other.
 License: MIT + file LICENSE
