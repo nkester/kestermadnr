@@ -2,18 +2,65 @@
 #'
 #' @param request Internal parameter for `{shiny}`.
 #'     DO NOT REMOVE.
-#' @import shiny
+#' @importFrom shiny tagList fluidPage navbarPage div img tabPanel p
+#' @importFrom shinipsum random_text
+#' @importFrom shinyalert useShinyalert
+#' @importFrom shinythemes shinytheme
 #' @noRd
 app_ui <- function(request) {
-  tagList(
+  shiny::tagList(
     # Leave this function for adding external resources
     golem_add_external_resources(),
+
+    mod_footer_ui("footer_1"),
+
     # Your application UI logic
-    fluidPage(
-      h1("kesterMadnr")
-    )
-  )
-}
+    shiny::fluidPage(
+
+      shiny::navbarPage(
+        title = shiny::div(
+          shiny::div(
+            id = "title-icon",
+            shiny::img(src = "www/favicon.png",
+                       height = "50px")
+          ),
+          "KWS March Madness"
+        ), # close shiny title div
+        theme = shinythemes::shinytheme(theme = "flatly"),
+        windowTitle = "KWS March Madness",
+        lang = "en",
+
+        shiny::tabPanel(title = "Home",
+
+                        shiny::p(shinipsum::random_text(nwords = 50)),
+
+                        mod_home_ui("home_1")
+
+        ), # close Introduction tabPanel
+
+        shiny::tabPanel(title = "Point Status",
+
+                        shiny::p(shinipsum::random_text(nwords = 50)),
+
+                        mod_your_bracket_ui("your_bracket_1")
+
+        ), # close Point Status tabPanel
+
+        shiny::tabPanel(title = "Your Bracket",
+
+                        shiny::p(shinipsum::random_text(nwords = 50)),
+
+                        mod_point_status_ui("point_status_1")
+
+        ) # close Your Bracket tabPanel
+
+      ) # close navbarPage
+
+    ) # close fluidPage
+
+  ) # close tagList
+
+} # close app_ui function
 
 #' Add external Resources to the Application
 #'
@@ -34,8 +81,9 @@ golem_add_external_resources <- function() {
     bundle_resources(
       path = app_sys("app/www"),
       app_title = "kesterMadnr"
-    )
-    # Add here other external resources
-    # for example, you can add shinyalert::useShinyalert()
+    ),
+
+    shinyalert::useShinyalert(force = TRUE)
+
   )
 }

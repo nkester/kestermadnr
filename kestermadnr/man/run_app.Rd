@@ -2,6 +2,7 @@
 % Please edit documentation in R/run_app.R
 \name{run_app}
 \alias{run_app}
+\alias{version}
 \title{Run the Shiny Application}
 \usage{
 run_app(
@@ -9,6 +10,7 @@ run_app(
   options = list(),
   enableBookmarking = NULL,
   uiPattern = "/",
+  version = utils::packageVersion("kestermadnr"),
   ...
 )
 }
@@ -32,6 +34,10 @@ for more information on bookmarking your app.}
 request to determine whether the \code{ui} should be used to handle the
 request. Note that the entire request path must match the regular
 expression in order for the match to be considered successful.}
+
+\item{version}{No need to enter anything here. This defaults to the version
+of the package as pulled from the documentation. It is displayed in the app
+footer.}
 
 \item{...}{arguments to pass to golem_opts.
 See `?golem::get_golem_options` for more details.}
