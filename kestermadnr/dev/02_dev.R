@@ -16,9 +16,9 @@
 ## Dependencies ----
 ## Amend DESCRIPTION with dependencies read from package code parsing
 ## install.package('attachment') # if needed.
-usethis::use_package("shinipsum")
+usethis::use_package("tidyr")
 usethis::use_package("shinyalert")
-usethis::use_package("shinythemes")
+usethis::use_package("collapsibleTree")
 attachment::att_amend_desc()
 
 ## Add modules ----
@@ -28,7 +28,7 @@ golem::add_module(name = "name_of_module2", with_test = TRUE) # Name of the modu
 
 ## Add helper functions ----
 ## Creates fct_* and utils_*
-golem::add_fct("helpers", with_test = TRUE)
+golem::add_fct("high_region_indvBracket", with_test = TRUE,module = "your_bracket",dir_create = TRUE,open = FALSE)
 golem::add_utils("helpers", with_test = TRUE)
 
 ## External resources
@@ -41,7 +41,7 @@ golem::add_sass_file("custom")
 
 ## Add internal datasets ----
 ## If you have data in your package
-usethis::use_data_raw(name = "my_dataset", open = FALSE)
+usethis::use_data_raw(name = "tournamentStructure", open = FALSE)
 
 ## Tests ----
 ## Add one line by test you want to create

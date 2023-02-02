@@ -1,18 +1,27 @@
 Package: kestermadnr
 Title: Kester, Smith, Wahl March Madness Tool
-Version: 0.0.1
-Authors@R: person('Neil', 'Kester', email = 'kesterne1@gmail.com', role = c('cre', 'aut'))
-Description: This application allows the family to enter, track, and compare their march madness picks against the tournament and each other.
+Version: 0.0.2
+Authors@R: 
+    person("Neil", "Kester", , "kesterne1@gmail.com", role = c("cre", "aut"))
+Description: This application allows the family to enter, track, and
+    compare their march madness picks against the tournament and each
+    other.
 License: MIT + file LICENSE
 URL: https://gitlab.com/nkester/kester-smith-wahl-march-madness
-BugReports: https://gitlab.com/nkester/kester-smith-wahl-march-madness/issues
+BugReports: 
+    https://gitlab.com/nkester/kester-smith-wahl-march-madness/issues
 Imports: 
+    collapsibleTree,
     config (>= 0.3.1),
+    dplyr,
     golem (>= 0.3.5),
+    magrittr,
+    readr,
     shinipsum,
     shiny (>= 1.7.4),
     shinyalert,
-    shinythemes
+    shinythemes,
+    tidyr
 Suggests: 
     spelling,
     testthat (>= 3.0.0)
@@ -21,3 +30,5 @@ Encoding: UTF-8
 Language: en-US
 LazyData: true
 RoxygenNote: 7.2.3
+Depends: 
+    R (>= 2.10)

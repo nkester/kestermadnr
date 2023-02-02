@@ -17,7 +17,7 @@ app_ui <- function(request) {
     # Your application UI logic
     shiny::fluidPage(
 
-      shiny::navbarPage(
+      shiny::navbarPage(selected = "tab_yourBracket",
         title = shiny::div(
           shiny::div(
             id = "title-icon",
@@ -31,6 +31,7 @@ app_ui <- function(request) {
         lang = "en",
 
         shiny::tabPanel(title = "Home",
+                        value = "tab_value",
 
                         shiny::p(shinipsum::random_text(nwords = 50)),
 
@@ -39,18 +40,20 @@ app_ui <- function(request) {
         ), # close Introduction tabPanel
 
         shiny::tabPanel(title = "Point Status",
-
-                        shiny::p(shinipsum::random_text(nwords = 50)),
-
-                        mod_your_bracket_ui("your_bracket_1")
-
-        ), # close Point Status tabPanel
-
-        shiny::tabPanel(title = "Your Bracket",
+                        value = "tab_pointStatus",
 
                         shiny::p(shinipsum::random_text(nwords = 50)),
 
                         mod_point_status_ui("point_status_1")
+
+        ), # close Point Status tabPanel
+
+        shiny::tabPanel(title = "Your Bracket",
+                        value = "tab_yourBracket",
+
+                        shiny::p(shinipsum::random_text(nwords = 50)),
+
+                        mod_your_bracket_ui("your_bracket_1")
 
         ) # close Your Bracket tabPanel
 

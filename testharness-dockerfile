@@ -1,0 +1,43 @@
+FROM docker.io/r-base:4.2.2
+
+ARG CRAN
+
+ENV CRAN=${CRAN:-https://packagemanager.rstudio.com/cran/latest}
+
+USER root
+
+RUN apt-get update && apt-get upgrade -y
+
+# Install system dependencies. r-base uses debian "bookworm" which I've substituted for Ubuntu Focal
+RUN apt-get install -y \
+  git \
+  make \
+  zlib1g-dev \
+  libcurl4-openssl-dev \
+  libssl-dev \
+  libfontconfig1-dev \
+  libfreetype6-dev \
+  libfribidi-dev \
+  libharfbuzz-dev \
+  libjpeg-dev \
+  libpng-dev \
+  libtiff-dev \
+  libicu-dev \
+  pandoc \
+  libxml2-dev \
+  libgit2-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /usr/local/lib/R/etc/ /usr/lib/R/etc/
+
+RUN echo "options(renv.config.pak.enabled = TRUE, repos = c(CRAN = 'https://cran.rstudio.com/'), download.file.method = 'libcurl', Ncpus = 4)" | tee /usr/local/lib/R/etc/Rprofile.site | tee /usr/lib/R/etc/Rprofile.site
+
+RUN R -e 'install.packages(c("renv","remotes","dockerfiler"))'
+
+RUN cd /tmp
+
+COPY ./kestermadnr/renv.lock renv.lock
+
+RUN R -e 'renv::restore()'
+
+RUN R -e 'install.packages(c("covr", "covrpage"))'

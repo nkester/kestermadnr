@@ -1,34 +1,58 @@
 stages:
+- build
 - pkg_test
 - pkg_covr
 - container_build
 - gcp_service_revise
 
+# Build a container image with all required libraries pre-installed in order to speed subsequent stages
+build_test_harness:
+  image: quay.io/podman/stable
+  stage: build
+  before_script:
+    # Log into the GitLab Project's Container Registry
+    - podman login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  script: 
+    # Build the testharness container image
+    - podman build -f testharness-dockerfile --progress=plain -t $CI_REGISTRY_IMAGE/testharness:$CI_COMMIT_SHORT_SHA .
+    - podman tag $CI_REGISTRY_IMAGE/testharness:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE/testharness:latest
+    - podman push $CI_REGISTRY_IMAGE/testharness:$CI_COMMIT_SHORT_SHA
+    - podman push $CI_REGISTRY_IMAGE/testharness:latest
+  # Always allow the job to run as manual but to run automatically if any of the three files changes.
+  rules:
+    - when: manual
+      allow_failure: true
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        - testharness-dockerfile
+        - ./kestermadnr/renv.lock
+        - ./kestermadnr/DESCRIPTION
+      when: always
+
 # Test that the package builds properly and passes all unit tests
 test_package:
-  image: rocker/tidyverse:4.2.2
+  image: $CI_REGISTRY_IMAGE/testharness:latest #rocker/tidyverse:4.2.2
   stage: pkg_test
-  before_script:
-    # Navigate from the root project dir to the package dir.
-    - cd ./kestermadnr
   script:
-    - R -e 'install.packages(c("remotes","devtools"))'
-    - R -e 'remotes::install_deps(dependencies = TRUE)'
-    - R -e 'devtools::check(pkg = ".")'
+    - cd ./kestermadnr
+    # TEMP: Install more packages
+    #   - R -e "install.packages(c('shinipsum','shinyalert','shinythemes'))"
+    # Run all tests on the package
+    - R -e 'renv::activate(); devtools::check(pkg = "./kestermadnr")'
   rules:
-    - allow_failure: false
+    - if: $CI_COMMIT_BRANCH == "develop"
+      when: always
+    - when: manual
 
 # If all tests pass, build a test coverage report for the package.
 document_coverage:
-  image: rocker/tidyverse:4.2.2
+  image: $CI_REGISTRY_IMAGE/testharness:latest #rocker/tidyverse:4.2.2
   stage: pkg_covr
   needs: ['test_package']
   before_script:
     # Navigate from the root project dir to the package dir.
     - cd ./kestermadnr
   script:
-    - R -e 'install.packages(c("remotes","DT","covr"))'
-    - R -e 'remotes::install_deps(dependencies = TRUE)'
     # Output the test coverage report in the public directory in a file named 'index.html'
     #  This allows GitLab pages to easily serve it.
     - R -e 'covr::gitlab(quiet = FALSE, file = "public/index.html")'
@@ -36,6 +60,10 @@ document_coverage:
   artifacts:
     paths:
       - ./kestermadnr/public
+  rules:
+    - when: manual
+    - if: $CI_COMMIT_BRANCH == "develop"
+      when: on_success
 
 # Deploy the coverage report to GitLab Pages for review.
 pages:
@@ -60,14 +88,14 @@ pages:
 
 # Allow {golem} to create the dockerfile for me.
 dockerfile_build:
-  image: rocker/tidyverse:4.2.2
+  image: $CI_REGISTRY_IMAGE/testharness:latest #rocker/tidyverse:4.2.2
   stage: container_build
   # Do not move forward to create the dockerfile if the app does not pass its tests.
   needs: ['test_package']
   before_script:
     - cd ./kestermadnr
   script:
-    - R -e 'install.packages(c("golem","dockerfiler","attachment","renv"))'
+    # - R -e 'install.packages(c("golem","dockerfiler","attachment","renv"))'
     # Build the dockerfile based on the golem project and the renv lock file.
     # Place the docker file, kestermadnr package .tar, and all other artifacts in
     #  the `deploy` directory at the project's root level (one level up).
