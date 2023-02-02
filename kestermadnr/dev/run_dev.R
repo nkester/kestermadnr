@@ -1,3 +1,9 @@
+# Reload all data
+source("./data-raw/playerPicks.R")
+source("./data-raw/tournamentStandings.R")
+source("./data-raw/tournamentStructure.R")
+rm(list = ls())
+
 # Set options here
 options(golem.app.prod = TRUE) # TRUE = production mode, FALSE = development mode
 
@@ -9,7 +15,7 @@ golem::detach_all_attached()
 # rm(list=ls(all.names = TRUE))
 
 # Document and reload your package
-golem::document_and_reload(pkg = ".",clean = TRUE,)
+golem::document_and_reload(pkg = ".",clean = TRUE)
 
 # Run the application
 run_app()
